@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29926.136
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapAutoPackager", "MapAutoPackager\MapAutoPackager.csproj", "{47764120-3DE8-4A76-8B6E-C6E5BE3C4456}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapPackager", "MapPackager\MapPackager.csproj", "{8018362E-6079-460B-86C6-E834A78A5520}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{47764120-3DE8-4A76-8B6E-C6E5BE3C4456}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47764120-3DE8-4A76-8B6E-C6E5BE3C4456}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47764120-3DE8-4A76-8B6E-C6E5BE3C4456}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47764120-3DE8-4A76-8B6E-C6E5BE3C4456}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8018362E-6079-460B-86C6-E834A78A5520}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8018362E-6079-460B-86C6-E834A78A5520}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8018362E-6079-460B-86C6-E834A78A5520}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8018362E-6079-460B-86C6-E834A78A5520}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {236078B7-106A-420F-A7FE-2202247A48C5}
+	EndGlobalSection
+EndGlobal
