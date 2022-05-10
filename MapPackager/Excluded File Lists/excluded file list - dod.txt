@@ -43,7 +43,6 @@ dod_vicenza.wad
 dod_zalec.cfg
 dod_zalec.wad
 gfx.wad
-hlbasics.wad
 gfx/detail/brick2.tga
 gfx/detail/dt_brick.tga
 gfx/detail/dt_carpet1.tga
@@ -224,6 +223,7 @@ gfx/vgui/marker_arrow_sw.tga
 gfx/vgui/marker_arrow_w.tga
 gfx/vgui/marker_green_x.tga
 gfx/vgui/marker_red_x.tga
+hlbasics.wad
 maps/dod_anzio.bsp
 maps/dod_anzio.txt
 maps/dod_anzio_detail.txt

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace MapPackager
@@ -10,6 +12,9 @@ namespace MapPackager
     /// </summary>
     public class Packager
     {
+        //TODO: Have this passed in and/or create defaults based on game and have a set path to search for this
+        private const string ExclusionFilePath = @"C:\Users\Bill\source\repos\MapAutoPackager\MapPackager\Excluded File Lists\excluded file list - dod.txt";
+
         //TODO: move these to a configuration file
         // -g: outputs file list to the console
         // -o: overwrites any existing .res file
@@ -35,17 +40,25 @@ namespace MapPackager
         /// <returns></returns>
         public string Package(string bspName)
         {
-            //TODO:
             // Generate Resource File
-            GenerateResourceFile(Path.Combine(GameDirectories[0], bspName));
-            // Parse resource file and load resources into memory
-            // Remove entries that are default files that come with the game
-            // Store this as a text file, so that it can be changed (maybe even used with other games)
-            // use Directory Printer application to create this list
-            // Add optional entries for things such .cfg and overview files
-            // Search through provided folder structures using the order as priority and generate a list of which files exist and which don't
-            // Create ZIP and save to zipOutputDirectory
+            var results = GenerateResourceFile(Path.Combine(GameDirectories[0], bspName));
 
+            if (results.SuccessfullyGenerated)
+            {
+                // Remove entries that are default files that come with the game
+                IEnumerable<string> customFileList = RemoveDefaultFilesFromResourceList(results.ResGenFileList.ToList(), ExclusionFilePath);
+
+                //TODO:
+                // Add optional entries for things such .cfg and overview files
+                // Add .bsp is not included in .res file, so make sure that is added
+                // Have a flag to store a text file with missing file or just output them to screen. Note which ones are optional
+                // Search through provided folder structures using the order as priority and generate a list of which files exist and which don't
+
+                //TODO:
+                // Create ZIP and save to zipOutputDirectory
+            }
+
+            //TODO: Create an object to return with details about the process. Let the calling app output a log
             return String.Empty;
         }
 
@@ -145,6 +158,14 @@ namespace MapPackager
             }
 
             return resourceFileResult;
+        }
+        private IEnumerable<string> RemoveDefaultFilesFromResourceList(List<string> resGenFileList, string pathToExcludeList)
+        {
+            var excludedFileList = File.ReadAllLines(pathToExcludeList).ToList();
+            resGenFileList.Sort();
+            //excludedFileList.Sort(); //TODO: Add a config option for assume sorted and skip or run this step accordingly
+
+            return resGenFileList.Except(excludedFileList);
         }
     }
 }
