@@ -49,7 +49,10 @@ namespace MapPackager
                 IEnumerable<string> customFileList = RemoveDefaultFilesFromResourceList(results.ResGenFileList.ToList(), ExclusionFilePath);
 
                 //TODO:
-                // Add optional entries for things such .cfg and overview files
+                List<AssociatedFile> filesToZip = FindFiles(GameDirectories, bspName, customFileList);
+
+                //TODO:
+                // Add optional entries for things such .cfg and overview files and bots waypoints
                 // Add .bsp is not included in .res file, so make sure that is added
                 // Have a flag to store a text file with missing file or just output them to screen. Note which ones are optional
                 // Search through provided folder structures using the order as priority and generate a list of which files exist and which don't
@@ -62,14 +65,9 @@ namespace MapPackager
             return String.Empty;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
         /// <remarks>Code examples for running a process:
         /// https://stackoverflow.com/questions/1469764/run-command-prompt-commands
         /// </remarks>
-        /// <param name="bspPath"></param>
-        /// <returns></returns>
         private ResourceFileResult GenerateResourceFile(string bspPath)
         {
             var process = new Process
@@ -159,6 +157,7 @@ namespace MapPackager
 
             return resourceFileResult;
         }
+
         private IEnumerable<string> RemoveDefaultFilesFromResourceList(List<string> resGenFileList, string pathToExcludeList)
         {
             var excludedFileList = File.ReadAllLines(pathToExcludeList).ToList();
@@ -166,6 +165,11 @@ namespace MapPackager
             //excludedFileList.Sort(); //TODO: Add a config option for assume sorted and skip or run this step accordingly
 
             return resGenFileList.Except(excludedFileList);
+        }
+
+        private List<AssociatedFile> FindFiles(string[] gameDirectories, string bspName, IEnumerable<string> customFileList)
+        {
+            throw new NotImplementedException();
         }
     }
 }
