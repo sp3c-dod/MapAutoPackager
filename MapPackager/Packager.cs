@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MapPackager
@@ -48,23 +49,32 @@ namespace MapPackager
                 // Remove entries that are default files that come with the game
                 List<string> customFileList = RemoveDefaultFilesFromResourceList(results.ResGenFileList.ToList(), ExclusionFilePath);
 
-                //TODO: Where is .res file? add this as well?
                 // Add .bsp since it is not included in .res file
-                customFileList.Add("maps/{bspName}");
+                customFileList.Add($"maps/{bspName}");
+
+                // Create an associated file list
+                List<AssociatedFile> associatedFiles = PopulateAssociatedFileList(customFileList);
+
+                // Only remove the .bsp from the end of the string in case .bsp exists elsewhere in the map name
+                var mapNameWithoutExtension = bspName.Remove(bspName.LastIndexOf(".bsp", StringComparison.InvariantCultureIgnoreCase), bspName.Length);
 
                 // Add files that aren't in the .res file, but are common
-                AddOptionalFiles(bspName, customFileList);
+                AddOptionalFiles(mapNameWithoutExtension, associatedFiles);
 
                 // Find the files on the local system. Search in all GameDirectories, but prioritize earlier directories
-                List<AssociatedFile> filesToZip = FindFiles(GameDirectories, bspName, customFileList);
+                FindFiles(GameDirectories, associatedFiles);
                 
+                //TODO: Check associatedFiles for accuracy
+
                 //TODO:
                 // Create ZIP and save to zipOutputDirectory
             }
 
             //TODO: Create an object to return with details about the process. Let the calling app output a log
+            //TODO: include associated files and if ZIP creation was succesful and ZIP path
             return String.Empty;
         }
+
 
         /// <remarks>Code examples for running a process:
         /// https://stackoverflow.com/questions/1469764/run-command-prompt-commands
@@ -125,7 +135,6 @@ namespace MapPackager
                         {
                             foundSuccessMessageAtEnd = true;
                         }
-                        
                     }
                 }
 
@@ -168,32 +177,82 @@ namespace MapPackager
             return resGenFileList.Except(excludedFileList).ToList();
         }
 
-        private void AddOptionalFiles(string bspName, List<string> customFileList)
+        private List<AssociatedFile> PopulateAssociatedFileList(List<string> customFileList)
         {
-            // Only remove the .bsp from the end of the string in case .bsp exists elsewhere in the map name
-            var mapNameWithoutExtension = bspName.Remove(bspName.LastIndexOf(".bsp", StringComparison.InvariantCultureIgnoreCase), bspName.Length);
+            var associatedFiles = new List<AssociatedFile>();
 
-            customFileList.Add("maps/{bspName}");
-            customFileList.Add("maps/{mapNameWithoutExtension}.txt");
-            customFileList.Add("maps/{mapNameWithoutExtension}.res");
-            customFileList.Add("{mapNameWithoutExtension}.cfg");
-            customFileList.Add("overviews/{mapNameWithoutExtension}.bmp");
-            customFileList.Add("overviews/{mapNameWithoutExtension}.txt");
-            customFileList.Add("sturmbot/waypoints/{mapNameWithoutExtension}.wpt");
-            customFileList.Add("shrikebot/waypoints/{mapNameWithoutExtension}.wps");
-        }
-
-
-        private List<AssociatedFile> FindFiles(string[] gameDirectories, string bspName, IEnumerable<string> customFileList)
-        {
-            foreach(string file in customFileList)
+            foreach (var file in customFileList)
             {
-                //TODO: Find files and fill out AssociatedFile fields
-                //TODO: Add any file that begins with bspNameWithoutExtension that is found in the folder structure
+                if (file.EndsWith(".bsp", StringComparison.InvariantCultureIgnoreCase) ||
+                    file.EndsWith(".wad", StringComparison.InvariantCultureIgnoreCase) ||
+                    file.EndsWith(".mdl", StringComparison.InvariantCultureIgnoreCase) ||
+                    file.EndsWith(".spr", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    associatedFiles.Add(new AssociatedFile() { FileName = file, FileImportance = FileImportance.Required });
+                }
+                else
+                {
+                    // The map will load without the .tga, .wav, .txt, etc... files, but they are an important otherwise the map
+                    // will look and sound incomplete
+                    associatedFiles.Add(new AssociatedFile() { FileName = file, FileImportance = FileImportance.Important });
+                }
             }
 
-            //TODO:
-            return new List<AssociatedFile>();
+            return associatedFiles;
+        }
+
+        private void AddOptionalFiles(string mapNameWithoutExtension, List<AssociatedFile> associatedFiles)
+        {
+            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.txt", FileImportance = FileImportance.Optional });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}_detail.txt", FileImportance = FileImportance.Optional });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.res", FileImportance = FileImportance.Extra });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"{mapNameWithoutExtension}.cfg", FileImportance = FileImportance.Extra });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.bmp", FileImportance = FileImportance.Optional });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.txt", FileImportance = FileImportance.Optional });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"sturmbot/waypoints/{mapNameWithoutExtension}.wpt", FileImportance = FileImportance.Extra });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"shrikebot/waypoints/{mapNameWithoutExtension}.wps", FileImportance = FileImportance.Extra });
+        }
+
+        private void FindFiles(string[] gameDirectories, List<AssociatedFile> associatedFiles)
+        {
+            var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+            foreach (var gameDirectory in gameDirectories)
+            {
+                foreach (var file in associatedFiles)
+                {
+                    if (isWindows)
+                    {
+                        file.FileName.Replace("/", @"\");
+                    }
+
+                    string fullPathToFile = Path.Combine(gameDirectory, file.FileName);
+                    var fileExistsInGameDirectory = File.Exists(fullPathToFile);
+
+                    if (file.Exists)
+                    {
+                        FileInfo currentfileInfo = new FileInfo(file.LocalFilePath);
+                        FileInfo newlyFoundfileInfo = new FileInfo(fullPathToFile);
+
+                        // check checksum or file size
+                        //TODO: add an option to check checksum OR file size. one is more accurate and one is faster
+                        if (currentfileInfo.Length != newlyFoundfileInfo.Length)
+                        {
+                            file.DuplicateWithDifferencesFound = true;
+                        }
+                    }
+                    else if (fileExistsInGameDirectory)
+                    {
+                        file.LocalFilePath = fullPathToFile;
+                        file.Exists = true;
+                    }
+                    else
+                    {
+                        file.Exists = false;
+                    }
+
+                }
+            }
         }
     }
 }
