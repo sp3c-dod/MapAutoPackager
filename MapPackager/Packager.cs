@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -39,8 +40,14 @@ namespace MapPackager
         /// </summary>
         /// <param name="bspName"></param>
         /// <returns></returns>
-        public string Package(string bspName)
+        public MapPackageResult Package(string bspName)
         {
+            var mapPackageResult = new MapPackageResult();
+
+            // Only remove the .bsp from the end of the string in case .bsp exists elsewhere in the map name
+            var mapNameWithoutExtension = bspName.Remove(bspName.LastIndexOf(".bsp", StringComparison.InvariantCultureIgnoreCase), bspName.Length);
+            mapPackageResult.MapName = mapNameWithoutExtension;
+
             // Generate Resource File
             var results = GenerateResourceFile(Path.Combine(GameDirectories[0], bspName));
 
@@ -55,26 +62,25 @@ namespace MapPackager
                 // Create an associated file list
                 List<AssociatedFile> associatedFiles = PopulateAssociatedFileList(customFileList);
 
-                // Only remove the .bsp from the end of the string in case .bsp exists elsewhere in the map name
-                var mapNameWithoutExtension = bspName.Remove(bspName.LastIndexOf(".bsp", StringComparison.InvariantCultureIgnoreCase), bspName.Length);
-
                 // Add files that aren't in the .res file, but are common
                 AddOptionalFiles(mapNameWithoutExtension, associatedFiles);
 
                 // Find the files on the local system. Search in all GameDirectories, but prioritize earlier directories
                 FindFiles(GameDirectories, associatedFiles);
-                
-                //TODO: Check associatedFiles for accuracy
 
-                //TODO:
+                //TODO: Manually check associatedFiles for accuracy at a breakpoint
+
                 // Create ZIP and save to zipOutputDirectory
+                CreateZipFile(associatedFiles, mapNameWithoutExtension, mapPackageResult);
+            }
+            else
+            {
+                mapPackageResult.ZipCreationSuccesful = false;
+                mapPackageResult.ErrorMessage = "Resource file was unable to be generated.";
             }
 
-            //TODO: Create an object to return with details about the process. Let the calling app output a log
-            //TODO: include associated files and if ZIP creation was succesful and ZIP path
-            return String.Empty;
+            return mapPackageResult;
         }
-
 
         /// <remarks>Code examples for running a process:
         /// https://stackoverflow.com/questions/1469764/run-command-prompt-commands
@@ -253,6 +259,46 @@ namespace MapPackager
 
                 }
             }
+        }
+
+        private void CreateZipFile(List<AssociatedFile> associatedFiles, string mapNameWithoutExtension, MapPackageResult mapPackageResult)
+        {
+            bool requiredFilesAreMissing = associatedFiles.Any(f => f.Exists == false && f.FileImportance == FileImportance.Required);
+            if (requiredFilesAreMissing)
+            {
+                mapPackageResult.ZipCreationSuccesful = false;
+                mapPackageResult.ErrorMessage = "Could not locate all required files in the given game directories";
+                return;
+            }
+
+            string zipFile = Path.Combine(ZipOutputDirectory, mapNameWithoutExtension + ".zip");
+            if (File.Exists(zipFile))
+            {
+                mapPackageResult.ZipCreationSuccesful = false;
+                mapPackageResult.ErrorMessage = "ZIP file already exists. Please delete it first if you wish to create a new one.";
+                return;
+            }
+
+            try
+            {
+                using (ZipArchive archive = ZipFile.Open(zipFile, ZipArchiveMode.Create))
+                {
+                    foreach (var file in associatedFiles.Where(af => af.Exists))
+                    {
+                        archive.CreateEntryFromFile(file.LocalFilePath, Path.GetFileName(file.LocalFilePath));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                mapPackageResult.ZipCreationSuccesful = false;
+                mapPackageResult.ErrorMessage = ex.Message;
+                return;
+            }
+
+            mapPackageResult.ZipCreationSuccesful = true;
+            mapPackageResult.AssociatedFiles = associatedFiles;
+            mapPackageResult.ZipFilePath = zipFile;
         }
     }
 }
