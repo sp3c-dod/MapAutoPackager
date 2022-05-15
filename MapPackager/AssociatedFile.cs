@@ -24,5 +24,11 @@
         /// Whether or the file located and is included in the package
         /// </summary>
         public bool Exists { get; set; }
+
+        //TODO: a flag to compare checksum vs just file size (file size should go faster)
+        /// <summary>
+        /// Found two files in different game directories with the same file name, but the files are different
+        /// </summary>
+        public bool DuplicateWithDifferencesFound { get; set; }
     }
 }

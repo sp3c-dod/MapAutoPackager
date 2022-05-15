@@ -20,6 +20,11 @@
         /// <summary>
         /// This file relates to the map, but is not part of the map itself (e.g. bot waypoints, readme.txt, etc...)
         /// </summary>
-        Extra
+        Extra,
+
+        /// <summary>
+        /// This file shares a name with the map, but its purpose is unknown
+        /// </summary>
+        Unknown
     }
 }

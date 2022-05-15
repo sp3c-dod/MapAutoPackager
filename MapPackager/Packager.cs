@@ -46,17 +46,18 @@ namespace MapPackager
             if (results.SuccessfullyGenerated)
             {
                 // Remove entries that are default files that come with the game
-                IEnumerable<string> customFileList = RemoveDefaultFilesFromResourceList(results.ResGenFileList.ToList(), ExclusionFilePath);
+                List<string> customFileList = RemoveDefaultFilesFromResourceList(results.ResGenFileList.ToList(), ExclusionFilePath);
 
-                //TODO:
+                //TODO: Where is .res file? add this as well?
+                // Add .bsp since it is not included in .res file
+                customFileList.Add("maps/{bspName}");
+
+                // Add files that aren't in the .res file, but are common
+                AddOptionalFiles(bspName, customFileList);
+
+                // Find the files on the local system. Search in all GameDirectories, but prioritize earlier directories
                 List<AssociatedFile> filesToZip = FindFiles(GameDirectories, bspName, customFileList);
-
-                //TODO:
-                // Add optional entries for things such .cfg and overview files and bots waypoints
-                // Add .bsp is not included in .res file, so make sure that is added
-                // Have a flag to store a text file with missing file or just output them to screen. Note which ones are optional
-                // Search through provided folder structures using the order as priority and generate a list of which files exist and which don't
-
+                
                 //TODO:
                 // Create ZIP and save to zipOutputDirectory
             }
@@ -158,18 +159,41 @@ namespace MapPackager
             return resourceFileResult;
         }
 
-        private IEnumerable<string> RemoveDefaultFilesFromResourceList(List<string> resGenFileList, string pathToExcludeList)
+        private List<string> RemoveDefaultFilesFromResourceList(List<string> resGenFileList, string pathToExcludeList)
         {
             var excludedFileList = File.ReadAllLines(pathToExcludeList).ToList();
             resGenFileList.Sort();
             //excludedFileList.Sort(); //TODO: Add a config option for assume sorted and skip or run this step accordingly
 
-            return resGenFileList.Except(excludedFileList);
+            return resGenFileList.Except(excludedFileList).ToList();
         }
+
+        private void AddOptionalFiles(string bspName, List<string> customFileList)
+        {
+            // Only remove the .bsp from the end of the string in case .bsp exists elsewhere in the map name
+            var mapNameWithoutExtension = bspName.Remove(bspName.LastIndexOf(".bsp", StringComparison.InvariantCultureIgnoreCase), bspName.Length);
+
+            customFileList.Add("maps/{bspName}");
+            customFileList.Add("maps/{mapNameWithoutExtension}.txt");
+            customFileList.Add("maps/{mapNameWithoutExtension}.res");
+            customFileList.Add("{mapNameWithoutExtension}.cfg");
+            customFileList.Add("overviews/{mapNameWithoutExtension}.bmp");
+            customFileList.Add("overviews/{mapNameWithoutExtension}.txt");
+            customFileList.Add("sturmbot/waypoints/{mapNameWithoutExtension}.wpt");
+            customFileList.Add("shrikebot/waypoints/{mapNameWithoutExtension}.wps");
+        }
+
 
         private List<AssociatedFile> FindFiles(string[] gameDirectories, string bspName, IEnumerable<string> customFileList)
         {
-            throw new NotImplementedException();
+            foreach(string file in customFileList)
+            {
+                //TODO: Find files and fill out AssociatedFile fields
+                //TODO: Add any file that begins with bspNameWithoutExtension that is found in the folder structure
+            }
+
+            //TODO:
+            return new List<AssociatedFile>();
         }
     }
 }
