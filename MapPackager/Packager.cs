@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Ionic.Zip;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
+//using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -94,7 +95,7 @@ namespace MapPackager
             string bspPath = null;
             foreach (var gameDirectory in GameDirectories)
             {
-                var bspPathToSearch = Path.Combine(GameDirectories[0], mapsFolder + bspName);
+                var bspPathToSearch = Path.Combine(gameDirectory, mapsFolder + bspName);
                 if (File.Exists(bspPathToSearch))
                 {
                     bspPath = bspPathToSearch;
@@ -168,7 +169,7 @@ namespace MapPackager
                 resourceFileResult.RawResGenOutput = rawResGenOutput.ToString();
 
                 // Trim off the find new line since each line was added with AppendLine including the last
-                resourceFileResult.ResGenFileList = resourceList.ToString().Trim().Split(Environment.NewLine);
+                resourceFileResult.ResGenFileList = resourceList.ToString().Trim().ToLowerInvariant().Split(Environment.NewLine);
 
                 if (!foundStartOfFileList)
                 {
@@ -196,8 +197,8 @@ namespace MapPackager
 
         private List<string> RemoveDefaultFilesFromResourceList(List<string> resGenFileList, string pathToExcludeList)
         {
-            var excludedFileList = File.ReadAllLines(pathToExcludeList).ToList();
-            var valveExcludedFileList = File.ReadAllLines(ValveExclusionFilePath).ToList();
+            var excludedFileList = File.ReadAllLines(pathToExcludeList).Select(s => s.ToLowerInvariant()).ToList();
+            var valveExcludedFileList = File.ReadAllLines(ValveExclusionFilePath).Select(s => s.ToLowerInvariant()).ToList();
 
             // Some queries around the files in the Valve folder for debugging issues
             //var filesNotInValve = resGenFileList.Where(t2 => !valveExcludedFileList.Any(t1 => t2.Contains(t1)));
@@ -223,13 +224,13 @@ namespace MapPackager
                     file.EndsWith(".mdl", StringComparison.InvariantCultureIgnoreCase) ||
                     file.EndsWith(".spr", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    associatedFiles.Add(new AssociatedFile() { FileName = file, FileImportance = FileImportance.Required });
+                    associatedFiles.Add(new AssociatedFile() { FileName = file, RelativePath = Path.GetDirectoryName(file), FileImportance = FileImportance.Required });
                 }
                 else
                 {
                     // The map will load without the .tga, .wav, .txt, etc... files, but they are an important otherwise the map
                     // will look and sound incomplete
-                    associatedFiles.Add(new AssociatedFile() { FileName = file, FileImportance = FileImportance.Important });
+                    associatedFiles.Add(new AssociatedFile() { FileName = file, RelativePath = Path.GetDirectoryName(file), FileImportance = FileImportance.Important });
                 }
             }
 
@@ -238,14 +239,14 @@ namespace MapPackager
 
         private void AddOptionalFiles(string mapNameWithoutExtension, List<AssociatedFile> associatedFiles)
         {
-            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.txt", FileImportance = FileImportance.Optional });
-            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}_detail.txt", FileImportance = FileImportance.Optional });
-            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.res", FileImportance = FileImportance.Extra });
-            associatedFiles.Add(new AssociatedFile() { FileName = $"{mapNameWithoutExtension}.cfg", FileImportance = FileImportance.Extra });
-            associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.bmp", FileImportance = FileImportance.Optional });
-            associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.txt", FileImportance = FileImportance.Optional });
-            associatedFiles.Add(new AssociatedFile() { FileName = $"sturmbot/waypoints/{mapNameWithoutExtension}.wpt", FileImportance = FileImportance.Extra });
-            associatedFiles.Add(new AssociatedFile() { FileName = $"shrikebot/waypoints/{mapNameWithoutExtension}.wps", FileImportance = FileImportance.Extra });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.txt", RelativePath = "maps", FileImportance = FileImportance.Optional });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}_detail.txt", RelativePath = "maps", FileImportance = FileImportance.Optional });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.res", RelativePath = "maps", FileImportance = FileImportance.Extra });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"{mapNameWithoutExtension}.cfg", RelativePath = String.Empty, FileImportance = FileImportance.Extra });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.bmp", RelativePath = "overviews", FileImportance = FileImportance.Optional });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.txt", RelativePath = "overviews", FileImportance = FileImportance.Optional });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"sturmbot/waypoints/{mapNameWithoutExtension}.wpt", RelativePath = "sturmbot/waypoints", FileImportance = FileImportance.Extra });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"shrikebot/waypoints/{mapNameWithoutExtension}.wps", RelativePath = "shrikebot/waypoints", FileImportance = FileImportance.Extra });
         }
 
         private void FindFiles(string[] gameDirectories, List<AssociatedFile> associatedFiles)
@@ -257,6 +258,7 @@ namespace MapPackager
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
                         file.FileName = file.FileName.Replace("/", @"\");
+                        file.RelativePath = file.RelativePath.Replace("/", @"\");
                     }
 
                     string fullPathToFile = Path.Combine(gameDirectory, file.FileName);
@@ -310,14 +312,15 @@ namespace MapPackager
 
             try
             {
-                using (ZipArchive archive = ZipFile.Open(zipFile, ZipArchiveMode.Create))
+                // Using DotNetZip to do the archiving: https://github.com/haf/DotNetZip.Semverd
+                using (ZipFile zip = new ZipFile())
                 {
                     foreach (var file in associatedFiles.Where(af => af.Exists))
                     {
-                        //TODO: needs to create sub-folders
-                        //TODO: figure out why default maps have some files in the packages (case sensitivity on exclude?)
-                        archive.CreateEntryFromFile(file.LocalFilePath, Path.GetFileName(file.LocalFilePath));
+                        zip.AddFile(file.LocalFilePath, file.RelativePath);
                     }
+                    
+                    zip.Save(zipFile);
                 }
             }
             catch (Exception ex)

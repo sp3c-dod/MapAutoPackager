@@ -1221,6 +1221,7 @@ sprites/icon_truck_axis.spr
 sprites/kexplosion1.spr
 sprites/large_smoke_01_ind.spr
 sprites/mapmarker.spr
+sprites/mapsprites//fexplo.spr
 sprites/mapmarkers/arrow_e.spr
 sprites/mapmarkers/arrow_n.spr
 sprites/mapmarkers/arrow_ne.spr

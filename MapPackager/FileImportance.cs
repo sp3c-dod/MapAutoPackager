@@ -1,5 +1,8 @@
 ﻿namespace MapPackager
 {
+    /// <summary>
+    /// Importance level of the file to the map
+    /// </summary>
     public enum FileImportance
     {
         /// <summary>

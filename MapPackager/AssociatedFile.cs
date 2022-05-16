@@ -11,6 +11,11 @@
         public string LocalFilePath { get; set; }
 
         /// <summary>
+        /// Relative path inside the game directory to the file
+        /// </summary>
+        public string RelativePath { get; set; }
+
+        /// <summary>
         /// Name of the file associated with the .bsp file
         /// </summary>
         public string FileName { get; set; }
