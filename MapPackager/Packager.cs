@@ -242,6 +242,7 @@ namespace MapPackager
             if (!associatedFiles.Any(f => f.FileName == $"maps/{mapNameWithoutExtension}_detail.txt")) associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}_detail.txt", RelativePath = "maps", FileImportance = FileImportance.Optional });
             if (!associatedFiles.Any(f => f.FileName == $"overviews/{mapNameWithoutExtension}.bmp")) associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.bmp", RelativePath = "overviews", FileImportance = FileImportance.Optional });
             if (!associatedFiles.Any(f => f.FileName == $"overviews/{mapNameWithoutExtension}.txt")) associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.txt", RelativePath = "overviews", FileImportance = FileImportance.Optional });
+            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}_readme.txt", RelativePath = "maps", FileImportance = FileImportance.Extra });
             associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.res", RelativePath = "maps", FileImportance = FileImportance.Extra });
             associatedFiles.Add(new AssociatedFile() { FileName = $"{mapNameWithoutExtension}.cfg", RelativePath = String.Empty, FileImportance = FileImportance.Extra });
             associatedFiles.Add(new AssociatedFile() { FileName = $"sturmbot/waypoints/{mapNameWithoutExtension}.wpt", RelativePath = "sturmbot/waypoints", FileImportance = FileImportance.Extra });
