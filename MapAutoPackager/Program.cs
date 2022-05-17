@@ -48,8 +48,8 @@ namespace MapAutoPackager
             const string dodDownloadsMapsDirectory = @"C:\Program Files (x86)\Steam\steamapps\common\Half-Life\dod_downloads\maps\";
             const string dodDownloadsDirectory = @"C:\Program Files (x86)\Steam\steamapps\common\Half-Life\dod_downloads\";
             const string gameDirectoy = @"C:\Program Files (x86)\Steam\steamapps\common\Half-Life\dod\";
-            const string zipOutputPath = @"C:\temp";
-            const string resultsOutputPath = @"C:\temp\{0}";
+            const string zipOutputPath = @"C:\Users\Bill\Documents\DOD\Maps\Classic Maps\Auto-Packaged\";
+            const string resultsOutputPath = @"C:\Users\Bill\Documents\DOD\Maps\Classic Maps\Auto-Packaged\Results Output\{0}";
 
             Packager mapPackager = new Packager()
             {
@@ -60,12 +60,21 @@ namespace MapAutoPackager
 
             // Gather all BSP names in the dod_downloads folder
             var allBsps = Directory.GetFiles(dodDownloadsMapsDirectory, "*.bsp", SearchOption.TopDirectoryOnly).Select(f => Path.GetFileName(f)).ToList();
+            //var allBsps = new string[] { "a3.bsp" };
 
             // Package Map
             MapPackageResult result;
-            //TODO: foreach (string bspName in allBsps)
-            foreach (string bspName in includedBspNames)
+            foreach (string bspName in allBsps)
+            //foreach (string bspName in includedBspNames)
             {
+                // If the output or error output already exists then skip this file. This is so we can pick up where we left off
+                // if there is an unhandled exception
+                if (File.Exists(String.Format(resultsOutputPath, bspName.Replace(".bsp", ".csv"))) ||
+                    File.Exists(String.Format(resultsOutputPath, bspName.Replace(".bsp", " - ERROR.csv"))))
+                {
+                    continue;
+                }
+
                 List<string> packagingReport = new List<string>();
                 Console.WriteLine($"Packaging {bspName}...");
                 result = mapPackager.Package(bspName);
@@ -84,14 +93,22 @@ namespace MapAutoPackager
                             Console.WriteLine($"... {file.FileName}");
                         }
                     }
+
+                    File.AppendAllLines(String.Format(resultsOutputPath, bspName.Replace(".bsp", ".csv")), packagingReport.ToArray());
                 }
                 else
                 {
                     Console.WriteLine($"ZIP Creation of {bspName} was NOT succesful");
                     Console.WriteLine($"Error: {result.ErrorMessage}");
-                }
+                    packagingReport.Add($"Error: {result.ErrorMessage}");
+                    packagingReport.Add("File Name, File Importance, File Exists, Duplicate With Differences Found");
+                    foreach (var file in result.AssociatedFiles)
+                    {
+                        packagingReport.Add($"{file.FileName}, {file.FileImportance}, {file.Exists}, {file.DuplicateWithDifferencesFound}");
+                    }
 
-                File.AppendAllLines(String.Format(resultsOutputPath, bspName.Replace(".bsp", ".csv")), packagingReport.ToArray());
+                    File.AppendAllLines(String.Format(resultsOutputPath, bspName.Replace(".bsp", " - ERROR.csv")), packagingReport.ToArray());
+                }
 
                 // Add a blank line between maps
                 Console.WriteLine();

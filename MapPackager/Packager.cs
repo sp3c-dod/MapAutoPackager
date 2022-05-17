@@ -294,6 +294,7 @@ namespace MapPackager
 
         private void CreateZipFile(List<AssociatedFile> associatedFiles, string mapNameWithoutExtension, MapPackageResult mapPackageResult)
         {
+            mapPackageResult.AssociatedFiles = associatedFiles;
             bool requiredFilesAreMissing = associatedFiles.Any(f => f.Exists == false && f.FileImportance == FileImportance.Required);
             if (requiredFilesAreMissing)
             {
@@ -331,7 +332,6 @@ namespace MapPackager
             }
 
             mapPackageResult.ZipCreationSuccesful = true;
-            mapPackageResult.AssociatedFiles = associatedFiles;
             mapPackageResult.ZipFilePath = zipFile;
         }
     }
