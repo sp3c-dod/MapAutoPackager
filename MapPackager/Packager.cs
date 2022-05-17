@@ -239,12 +239,12 @@ namespace MapPackager
 
         private void AddOptionalFiles(string mapNameWithoutExtension, List<AssociatedFile> associatedFiles)
         {
-            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.txt", RelativePath = "maps", FileImportance = FileImportance.Optional });
-            associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}_detail.txt", RelativePath = "maps", FileImportance = FileImportance.Optional });
+            if (!associatedFiles.Any(f => f.FileName == $"maps/{mapNameWithoutExtension}.txt")) associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.txt", RelativePath = "maps", FileImportance = FileImportance.Optional });
+            if (!associatedFiles.Any(f => f.FileName == $"maps/{mapNameWithoutExtension}_detail.txt")) associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}_detail.txt", RelativePath = "maps", FileImportance = FileImportance.Optional });
+            if (!associatedFiles.Any(f => f.FileName == $"overviews/{mapNameWithoutExtension}.bmp")) associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.bmp", RelativePath = "overviews", FileImportance = FileImportance.Optional });
+            if (!associatedFiles.Any(f => f.FileName == $"overviews/{mapNameWithoutExtension}.txt")) associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.txt", RelativePath = "overviews", FileImportance = FileImportance.Optional });
             associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.res", RelativePath = "maps", FileImportance = FileImportance.Extra });
             associatedFiles.Add(new AssociatedFile() { FileName = $"{mapNameWithoutExtension}.cfg", RelativePath = String.Empty, FileImportance = FileImportance.Extra });
-            associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.bmp", RelativePath = "overviews", FileImportance = FileImportance.Optional });
-            associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.txt", RelativePath = "overviews", FileImportance = FileImportance.Optional });
             associatedFiles.Add(new AssociatedFile() { FileName = $"sturmbot/waypoints/{mapNameWithoutExtension}.wpt", RelativePath = "sturmbot/waypoints", FileImportance = FileImportance.Extra });
             associatedFiles.Add(new AssociatedFile() { FileName = $"shrikebot/waypoints/{mapNameWithoutExtension}.wps", RelativePath = "shrikebot/waypoints", FileImportance = FileImportance.Extra });
         }
@@ -300,7 +300,6 @@ namespace MapPackager
             {
                 mapPackageResult.ZipCreationSuccesful = false;
                 mapPackageResult.ErrorMessage = "Could not locate all required files in the given game directories";
-                return;
             }
 
             string zipFile = Path.Combine(ZipOutputDirectory, mapNameWithoutExtension + ".zip");
@@ -321,7 +320,19 @@ namespace MapPackager
                         zip.AddFile(file.LocalFilePath, file.RelativePath);
                     }
                     
-                    zip.Save(zipFile);
+                    if (String.IsNullOrEmpty(mapPackageResult.ErrorMessage))
+                    {
+                        mapPackageResult.ZipCreationSuccesful = true;
+                        mapPackageResult.ZipFilePath = zipFile;
+                        zip.Save(zipFile);
+                    }
+                    else
+                    {
+                        var indexOfFileExtension = zipFile.LastIndexOf(".zip", StringComparison.InvariantCultureIgnoreCase);
+                        var errorZipPath = zipFile.Remove(indexOfFileExtension, zipFile.Length - indexOfFileExtension) + " - ERROR.zip";
+                        mapPackageResult.ZipFilePath = errorZipPath;
+                        zip.Save(errorZipPath);
+                    }
                 }
             }
             catch (Exception ex)
@@ -329,10 +340,7 @@ namespace MapPackager
                 mapPackageResult.ZipCreationSuccesful = false;
                 mapPackageResult.ErrorMessage = ex.Message;
                 return;
-            }
-
-            mapPackageResult.ZipCreationSuccesful = true;
-            mapPackageResult.ZipFilePath = zipFile;
+            }  
         }
     }
 }
