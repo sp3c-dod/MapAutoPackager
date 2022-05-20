@@ -1,8 +1,7 @@
-﻿using System;
+﻿using MapPackager;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using MapPackager;
 
 namespace MapAutoPackager
 {
@@ -59,8 +58,8 @@ namespace MapAutoPackager
             };
 
             // Gather all BSP names in the dod_downloads folder
-            var allBsps = Directory.GetFiles(dodDownloadsMapsDirectory, "*.bsp", SearchOption.TopDirectoryOnly).Select(f => Path.GetFileName(f)).ToList();
-            //var allBsps = new string[] { "a3.bsp" };
+            //var allBsps = Directory.GetFiles(dodDownloadsMapsDirectory, "*.bsp", SearchOption.TopDirectoryOnly).Select(f => Path.GetFileName(f)).ToList();
+            var allBsps = new string[] { "dod_trainskill.bsp" };
 
             // Package Map
             MapPackageResult result;
