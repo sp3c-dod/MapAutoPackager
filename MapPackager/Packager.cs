@@ -65,6 +65,8 @@ namespace MapPackager
                 // Create an associated file list
                 List<AssociatedFile> associatedFiles = PopulateAssociatedFileList(customFileList);
 
+                //TODO: Add /sprites/obj_icons/[map_name]/ folder if it exists
+
                 // Add files that aren't in the .res file, but are common
                 AddOptionalFiles(mapNameWithoutExtension, associatedFiles);
 
