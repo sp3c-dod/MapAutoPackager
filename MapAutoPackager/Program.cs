@@ -65,7 +65,7 @@ namespace MapAutoPackager
             var bspsToPackage = dodDownloadsFolderBsps.Union(dodBspsExcludingBuiltIn).ToList();
 
             //var duplicates = dodDownloadsFolderBsps.Intersect(dodBspsExcludingBuiltIn).ToList();  // For finding duplicates between the dod and dod_downloads folders
-            //var bspsToPackage = new string[] { "dod_trainskill.bsp" };  // Use this to package single map
+            //var bspsToPackage = new string[] { "dod_trainskill.bsp" };  // Use this to package a single map
 
             // Package Map
             MapPackageResult result;
