@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace MapAutoPackager
 {
@@ -57,13 +58,18 @@ namespace MapAutoPackager
                 PathToResGenExecutable = @"C:\Users\Bill\source\repos\MapAutoPackager\MapPackager\ResGen"
             };
 
-            // Gather all BSP names in the dod_downloads folder
-            //var allBsps = Directory.GetFiles(dodDownloadsMapsDirectory, "*.bsp", SearchOption.TopDirectoryOnly).Select(f => Path.GetFileName(f)).ToList();
-            var allBsps = new string[] { "dod_trainskill.bsp" };
+            // Gather all BSP names in the dod and dod_downloads folder except the maps that come with the game
+            var dodDownloadsFolderBsps = Directory.GetFiles(dodDownloadsMapsDirectory, "*.bsp", SearchOption.TopDirectoryOnly).Select(f => Path.GetFileName(f)).ToList();
+            var dodFolderBsps = Directory.GetFiles(gameDirectoy + "maps\\", "*.bsp", SearchOption.TopDirectoryOnly).Select(f => Path.GetFileName(f)).ToList();
+            var dodBspsExcludingBuiltIn = dodFolderBsps.Except(includedBspNames).ToList();
+            var bspsToPackage = dodDownloadsFolderBsps.Union(dodBspsExcludingBuiltIn).ToList();
+
+            //var duplicates = dodDownloadsFolderBsps.Intersect(dodBspsExcludingBuiltIn).ToList();  // For finding duplicates between the dod and dod_downloads folders
+            //var bspsToPackage = new string[] { "dod_trainskill.bsp" };  // Use this to package single map
 
             // Package Map
             MapPackageResult result;
-            foreach (string bspName in allBsps)
+            foreach (string bspName in bspsToPackage)
             //foreach (string bspName in includedBspNames)
             {
                 // If the output or error output already exists then skip this file. This is so we can pick up where we left off
