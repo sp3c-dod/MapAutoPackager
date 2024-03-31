@@ -66,10 +66,11 @@ namespace MapPackager
                 // Create an associated file list
                 List<AssociatedFile> associatedFiles = PopulateAssociatedFileList(customFileList);
 
-                //TODO: Add /sprites/obj_icons/[map_name]/ folder if it exists
-
                 // Add files that aren't in the .res file, but are common
                 AddOptionalFiles(mapNameWithoutExtension, associatedFiles);
+
+                // Check for folders that contain files exclusively associated with the map
+                AddFilesInAssociatedFolders(GameDirectories, mapNameWithoutExtension, associatedFiles);
 
                 // Find the files on the local system. Search in all GameDirectories, but prioritize earlier directories
                 FindFiles(GameDirectories, associatedFiles);
@@ -292,6 +293,37 @@ namespace MapPackager
                         {
                             file.Exists = false;
                         }
+                    }
+                }
+            }
+        }
+
+        //TODO: There is a dod_vermok folder inside of /sprites/obj_icons/ on my machine, but the only .bsp I have is dod_vemork_beta1
+        // If it is possible for the folder and the map name to not be identical then we will have to research on how to detect this
+        private void AddFilesInAssociatedFolders(string[] gameDirectories, string mapNameWithoutExtension, List<AssociatedFile> associatedFiles)
+        {
+            // At the moment /sprites/obj_icons/{mapNameWithoutExtension}/ is the only folder I'm aware of associated with a map
+            // If there are more then we can create a list of folders to search for and loop through them here
+            // We'd also need to find out if there can be subfolders within these associated folders or not
+            var folderToSearchFor = $"sprites/obj_icons/{mapNameWithoutExtension}/";
+
+            foreach (var gameDirectory in gameDirectories)
+            {
+                var folderToSearchForLocalizedToOs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? folderToSearchFor.Replace("/", @"\") : folderToSearchFor;
+                var fullPathToFolder = gameDirectory + folderToSearchForLocalizedToOs;
+                if (Directory.Exists(fullPathToFolder))
+                {
+                    // Assuming no subfolders. If there are subfolders we'll have to recurse through those as well.
+                    string[] allSpritesToInclude = Directory.GetFiles(fullPathToFolder, "*.spr");
+
+                    foreach (var spritePath in allSpritesToInclude)
+                    {
+                        //TODO: Check inside the BSP to see if these sprites are actually used. For now assume they are all required
+                        var relativeSpritePath = folderToSearchFor + Path.GetFileName(spritePath);
+                        if (!associatedFiles.Any(f => f.FileName == relativeSpritePath))
+                        {
+                            associatedFiles.Add(new AssociatedFile() { FileName = relativeSpritePath, RelativePath = folderToSearchFor.TrimEnd('/'), FileImportance = FileImportance.Required });
+                        }                           
                     }
                 }
             }
