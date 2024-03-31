@@ -52,6 +52,7 @@ namespace MapPackager
             mapPackageResult.MapName = mapNameWithoutExtension;
 
             // Generate Resource File
+            //TODO: Decompress/unpackage the BSP file and generate our own .res file and list of required/optional files without using ResGen
             var resourceFileGenerationResults = GenerateResourceFile(bspName);
 
             if (resourceFileGenerationResults.SuccessfullyGenerated)
@@ -220,6 +221,7 @@ namespace MapPackager
 
             foreach (var file in customFileList)
             {
+                //TODO: Decompress/unpackage WAD files and compare texture list to those used within the BSP to see if the WAD is truly required
                 if (file.EndsWith(".bsp", StringComparison.InvariantCultureIgnoreCase) ||
                     file.EndsWith(".wad", StringComparison.InvariantCultureIgnoreCase) ||
                     file.EndsWith(".mdl", StringComparison.InvariantCultureIgnoreCase) ||
