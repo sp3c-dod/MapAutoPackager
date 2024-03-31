@@ -298,8 +298,6 @@ namespace MapPackager
             }
         }
 
-        //TODO: There is a dod_vermok folder inside of /sprites/obj_icons/ on my machine, but the only .bsp I have is dod_vemork_beta1
-        // If it is possible for the folder and the map name to not be identical then we will have to research on how to detect this
         private void AddFilesInAssociatedFolders(string[] gameDirectories, string mapNameWithoutExtension, List<AssociatedFile> associatedFiles)
         {
             // At the moment /sprites/obj_icons/{mapNameWithoutExtension}/ is the only folder I'm aware of associated with a map
