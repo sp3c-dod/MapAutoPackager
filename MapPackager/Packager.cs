@@ -36,6 +36,7 @@ namespace MapPackager
         public string[] GameDirectories { get; set; }
         public string ZipOutputDirectory { get; set; }
         public string PathToResGenExecutable { get; set; }
+        public bool PutMapsWithErrorsInSubFolders { get; set; }
 
         /// <summary>
         /// Packages a map file into a ZIP file
@@ -232,8 +233,8 @@ namespace MapPackager
                 }
                 else
                 {
-                    // The map will load without the .tga, .wav, .txt, etc... files, but they are an important otherwise the map
-                    // will look and sound incomplete
+                    // Add all other files in the resource list as "Important". The map will load without the .tga, .wav, etc... files, but they are
+                    // an important otherwise the map will look and sound incomplete.
                     associatedFiles.Add(new AssociatedFile() { FileName = file, RelativePath = Path.GetDirectoryName(file), FileImportance = FileImportance.Important });
                 }
             }
@@ -245,8 +246,8 @@ namespace MapPackager
         {
             if (!associatedFiles.Any(f => f.FileName == $"maps/{mapNameWithoutExtension}.txt")) associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.txt", RelativePath = "maps", FileImportance = FileImportance.Optional });
             if (!associatedFiles.Any(f => f.FileName == $"maps/{mapNameWithoutExtension}_detail.txt")) associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}_detail.txt", RelativePath = "maps", FileImportance = FileImportance.Optional });
-            if (!associatedFiles.Any(f => f.FileName == $"overviews/{mapNameWithoutExtension}.bmp")) associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.bmp", RelativePath = "overviews", FileImportance = FileImportance.Optional });
-            if (!associatedFiles.Any(f => f.FileName == $"overviews/{mapNameWithoutExtension}.txt")) associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.txt", RelativePath = "overviews", FileImportance = FileImportance.Optional });
+            if (!associatedFiles.Any(f => f.FileName == $"overviews/{mapNameWithoutExtension}.bmp")) associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.bmp", RelativePath = "overviews", FileImportance = FileImportance.Important });
+            if (!associatedFiles.Any(f => f.FileName == $"overviews/{mapNameWithoutExtension}.txt")) associatedFiles.Add(new AssociatedFile() { FileName = $"overviews/{mapNameWithoutExtension}.txt", RelativePath = "overviews", FileImportance = FileImportance.Important });
             associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}_readme.txt", RelativePath = "maps", FileImportance = FileImportance.Extra });
             associatedFiles.Add(new AssociatedFile() { FileName = $"{mapNameWithoutExtension}_readme.txt", RelativePath = String.Empty, FileImportance = FileImportance.Extra });
             associatedFiles.Add(new AssociatedFile() { FileName = $"maps/{mapNameWithoutExtension}.res", RelativePath = "maps", FileImportance = FileImportance.Extra });
@@ -337,7 +338,16 @@ namespace MapPackager
                 mapPackageResult.ErrorMessage = "Could not locate all required files in the given game directories";
             }
 
-            string zipFile = Path.Combine(ZipOutputDirectory, mapNameWithoutExtension + ".zip");
+            string missingFileTypeByPriority = PutMapsWithErrorsInSubFolders ? GetMissingFileType(associatedFiles) : String.Empty;
+
+            // If necessary create the subfolder if it does not exist
+            string baseZipPath = Path.Combine(ZipOutputDirectory, missingFileTypeByPriority);
+            if (!String.IsNullOrEmpty(missingFileTypeByPriority) && !File.Exists(baseZipPath))
+            {
+                Directory.CreateDirectory(baseZipPath);
+            }
+
+            string zipFile = Path.Combine(baseZipPath, mapNameWithoutExtension + ".zip");
             if (File.Exists(zipFile))
             {
                 mapPackageResult.ZipCreationSuccesful = false;
@@ -364,7 +374,8 @@ namespace MapPackager
                     else
                     {
                         var indexOfFileExtension = zipFile.LastIndexOf(".zip", StringComparison.InvariantCultureIgnoreCase);
-                        var errorZipPath = zipFile.Remove(indexOfFileExtension, zipFile.Length - indexOfFileExtension) + " - ERROR.zip";
+                        //TODO: Add an option to sort ZIPs into folder or by filename based on error type
+                        var errorZipPath = zipFile.Remove(indexOfFileExtension, zipFile.Length - indexOfFileExtension) + " - ERROR Needs " + missingFileTypeByPriority + ".zip";
                         mapPackageResult.ZipFilePath = errorZipPath;
                         zip.Save(errorZipPath);
                     }
@@ -376,6 +387,26 @@ namespace MapPackager
                 mapPackageResult.ErrorMessage = ex.Message;
                 return;
             }  
+        }
+
+        private string GetMissingFileType(List<AssociatedFile> associatedFiles)
+        {
+            // Priotize models and sprites first as they are required for the map to load and play properly
+            if (associatedFiles.Any(file => file.FileName.EndsWith(".mdl") && !file.Exists)) return "Models";
+            if (associatedFiles.Any(file => file.FileName.EndsWith(".spr") && !file.Exists)) return "Sprites";
+
+            // Priotize Sounds and Backgrounds second because they are important to map experience, but not required for it to load
+            if (associatedFiles.Any(file => file.FileName.EndsWith(".wav") && !file.Exists)) return "Sounds";
+            if (associatedFiles.Any(file => file.FileName.EndsWith(".tga") && !file.Exists)) return "Backgrounds";
+
+            // Priotize Overviews third, because while playable without them it takes from the overall experience
+            if (associatedFiles.Any(file => file.FileName.Contains("overviews/") && !file.Exists)) return "Overviews";
+
+            // Priotize WADs last because there are a lot of WADs listed in BSPs that aren't used causing false positives
+            if (associatedFiles.Any(file => file.FileName.EndsWith(".wad") && !file.Exists)) return "Textures";
+
+            // There are no missing files of importance
+            return String.Empty;
         }
     }
 }

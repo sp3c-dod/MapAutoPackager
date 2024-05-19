@@ -50,12 +50,15 @@ namespace MapAutoPackager
             const string gameDirectoy = @"C:\Program Files (x86)\Steam\steamapps\common\Half-Life\dod\";
             const string zipOutputPath = @"C:\Users\Bill\Documents\DOD\Maps\Classic Maps\Auto-Packaged\";
             const string resultsOutputPath = @"C:\Users\Bill\Documents\DOD\Maps\Classic Maps\Auto-Packaged\Results Output\{0}";
+            //const string zipOutputPath = @"C:\temp\Map Pack Test\";
+            //const string resultsOutputPath = @"C:\temp\Map Pack Test\Results Output\{0}";
 
             Packager mapPackager = new Packager()
             {
                 GameDirectories = new string[] { gameDirectoy, dodDownloadsDirectory },
                 ZipOutputDirectory = zipOutputPath,
-                PathToResGenExecutable = @"C:\Users\Bill\source\repos\MapAutoPackager\MapPackager\ResGen"
+                PathToResGenExecutable = @"C:\Users\Bill\source\repos\MapAutoPackager\MapPackager\ResGen",
+                PutMapsWithErrorsInSubFolders = true
             };
 
             // Gather all BSP names in the dod and dod_downloads folder except the maps that come with the game
@@ -65,7 +68,7 @@ namespace MapAutoPackager
             var bspsToPackage = dodDownloadsFolderBsps.Union(dodBspsExcludingBuiltIn).ToList();
 
             //var duplicates = dodDownloadsFolderBsps.Intersect(dodBspsExcludingBuiltIn).ToList();  // For finding duplicates between the dod and dod_downloads folders
-            //var bspsToPackage = new string[] { "dod_trainskill.bsp" };  // Use this to package a single map
+            //var bspsToPackage = new string[] { "dod_hostile.bsp" };  // Use this to package a single map
 
             // Package Map
             MapPackageResult result;
